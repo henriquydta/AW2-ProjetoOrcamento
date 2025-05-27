@@ -1,0 +1,47 @@
+const SECRET_TOKEN = ""; // Substituir por seu token
+
+function doPost(e) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+
+  const token = e.parameter.token;
+
+  if (token !== SECRET_TOKEN) {
+    return ContentService.createTextOutput("Token inválido.");
+  }
+
+  let dataOrcamento = `${e.parameter.dia}/${e.parameter.mes}/${e.parameter.ano}`;
+
+  let tipoOrcamento;
+  switch(e.parameter.tipo){
+    case "1":
+      tipoOrcamento = "Alimentação";
+      break;
+    case "2":
+      tipoOrcamento = "Educação";
+      break;
+    case "3":
+      tipoOrcamento = "Lazer";
+      break;
+    case "4":
+      tipoOrcamento = "Saúde";
+      break;
+    case "5":
+      tipoOrcamento = "Transporte";
+      break;
+    default:
+      tipoOrcamento = "Desconhecido";
+  }
+
+  const timestamp = new Date();
+  sheet.appendRow([
+    timestamp,
+    dataOrcamento,
+    tipoOrcamento,
+    e.parameter.descricao,
+    e.parameter.valor
+  ]);
+
+  sheet.autoResizeColumns(1, 5);
+
+  return ContentService.createTextOutput("Registro adicionado com sucesso");
+}

@@ -290,3 +290,30 @@ function somarValoresDoAno() {
     console.log(`Total de despesas no mês: R$ ${total.toFixed(2)}`)
     document.getElementById("resultadoAno").innerHTML = `Total de despesas no ano: R$ ${total.toFixed(2)}`
 }
+
+function exportarDespesasParaPlanilha() {
+  const bd = new Bd()
+  const despesas = bd.recuperarTodosRegistros()
+
+  despesas.forEach(d => {
+    const body = new URLSearchParams({
+      ano: d.ano,
+      mes: d.mes,
+      dia: d.dia,
+      tipo: d.tipo,
+      descricao: d.descricao,
+      valor: d.valor
+    })
+
+    fetch('/spreadsheet', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: body.toString()
+    })
+      .then(res => res.text())
+      .then(resposta => console.log("Resposta:", resposta))
+      .catch(err => console.error("Erro:", err))
+  })
+}
