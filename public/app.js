@@ -23,8 +23,6 @@ class Despesa {
             }
         }
 
-        console.log("Passou no primeiro teste")
-
         if (this.mes == 2) {
             if (this.ano % 4 == 0) {
                 if (this.dia > 29) {
@@ -37,21 +35,15 @@ class Despesa {
             }
         }
 
-        console.log("Passou no segundo teste")
-
         if (this.dia > 31) {
             return false
         }
-
-        console.log("Passou no terceiro teste")
 
         this.valor = parseFloat(this.valor)
 
         if (isNaN(this.valor)) {
             return false
         }
-
-        console.log("Passou no quarto teste")
 
         return true
     }
@@ -221,7 +213,7 @@ function carregaListaDespesas(despesas = Array(), filtro = false) {
 
     let listaDespesas = document.getElementById("listaDespesas")
     listaDespesas.innerHTML = ''
-    despesas.forEach(function(d) {
+    despesas.forEach(function (d) {
         var linha = listaDespesas.insertRow()
 
         linha.insertCell(0).innerHTML = `${d.dia}/${d.mes}/${d.ano}`
@@ -246,7 +238,7 @@ function carregaListaDespesas(despesas = Array(), filtro = false) {
         btn.className = 'btn btn-danger'
         btn.innerHTML = '<i class="fa fa-times" ></i>'
         btn.id = `id_despesa_${d.id}`
-        btn.onclick = function() {
+        btn.onclick = function () {
             let id = this.id.replace('id_despesa_', '')
             bd.remover(id)
             window.location.reload()
@@ -291,29 +283,79 @@ function somarValoresDoAno() {
     document.getElementById("resultadoAno").innerHTML = `Total de despesas no ano: R$ ${total.toFixed(2)}`
 }
 
+function showToast(message, type = 'success') {
+    const toastEl = document.getElementById('liveToast')
+    const toastBody = document.getElementById('toastMessage')
+
+    toastBody.textContent = message
+
+    toastEl.classList.remove('text-bg-success', 'text-bg-danger', 'text-bg-warning')
+
+    toastEl.classList.add(`text-bg-${type}`)
+
+    const toast = new bootstrap.Toast(toastEl)
+    toast.show()
+}
+
+
 function exportarDespesasParaPlanilha() {
-  const bd = new Bd()
-  const despesas = bd.recuperarTodosRegistros()
+    const bd = new Bd()
+    const despesas = bd.recuperarTodosRegistros()
 
-  despesas.forEach(d => {
-    const body = new URLSearchParams({
-      ano: d.ano,
-      mes: d.mes,
-      dia: d.dia,
-      tipo: d.tipo,
-      descricao: d.descricao,
-      valor: d.valor
-    })
+    if (despesas.length === 0) {
+        showToast('Nenhuma despesa pra exportar.', 'danger')
+        return
+    }
 
-    fetch('/spreadsheet', {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: body.toString()
+    let sucessos = 0
+    let erros = 0
+    let concluidas = 0
+    const total = despesas.length
+
+    despesas.forEach(d => {
+        const body = new URLSearchParams({
+            ano: d.ano,
+            mes: d.mes,
+            dia: d.dia,
+            tipo: d.tipo,
+            descricao: d.descricao,
+            valor: d.valor
+        })
+
+        fetch('/spreadsheet', {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: body.toString()
+        })
+            .then(res => {
+                if (!res.ok) throw new Error()
+                sucessos++
+            })
+            .catch(() => {
+                erros++
+            })
+            .finally(() => {
+                concluidas++
+
+                if (concluidas === total) {
+                    let message = ''
+                    let type = ''
+
+                    if (sucessos === total) {
+                        message = 'Todas as despesas exportadas com sucesso.'
+                        type = 'success'
+                    } else if (erros === total) {
+                        message = 'Erro. Nenhuma despesa exportada.'
+                        type = 'danger'
+                    } else {
+                        message = `Exportação parcial: ${sucessos} sucesso(s), ${erros} erro(s).`
+                        type = 'warning'
+                    }
+
+                    showToast(message, type)
+                }
+            })
     })
-      .then(res => res.text())
-      .then(resposta => console.log("Resposta:", resposta))
-      .catch(err => console.error("Erro:", err))
-  })
 }
